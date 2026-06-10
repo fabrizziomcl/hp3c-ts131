@@ -1,89 +1,69 @@
-
 import streamlit as st
-import pymongo
-from pymongo import MongoClient
-import os
-from dotenv import load_dotenv
+import pandas as pd
+import numpy as np
+import plotly.express as px
 
-# Cargar variables de entorno (para credenciales de MongoDB)
-load_dotenv()
+# Configuración de la página
+st.set_page_config(
+    page_title="Mi App Streamlit",
+    page_icon="🚀",
+    layout="wide"
+)
 
-def connect_to_mongodb():
-    """Conectar a MongoDB Atlas usando la cadena de conexión"""
-    connection_string = st.secrets["MONGODB_CONNECTION_STRING"]
-    if not connection_string:
-        st.error("Error: No se encontró la variable de entorno MONGODB_CONNECTION_STRING")
-        return None
+# Título principal
+st.title("🚀 Mi App Streamlit en Docker")
+st.markdown("---")
 
-    try:
-        client = MongoClient(connection_string)
-        # Verificar la conexión
-        client.admin.command('ping')
-        return client
-    except Exception as e:
-        st.error(f"Error conectando a MongoDB Atlas: {e}")
-        return None
+# Sidebar
+st.sidebar.header("Configuración")
+nombre = st.sidebar.text_input("Tu nombre:", "Usuario")
+edad = st.sidebar.slider("Tu edad:", 1, 100, 25)
 
-def query_theaters_by_city(city_name):
-    """Consultar teatros en la base de datos sample_mflix por nombre de ciudad"""
-    try:
-        # Conectar a MongoDB
-        client = connect_to_mongodb()
-        if not client:
-            return None
+# Contenido principal
+col1, col2 = st.columns(2)
 
-        # Acceder a la base de datos sample_mflix
-        db = client.sample_mflix
+with col1:
+    st.header(f"¡Hola {nombre}!")
+    st.write(f"Tienes {edad} años")
+    
+    # Botón interactivo
+    if st.button("Generar datos aleatorios"):
+        st.success("¡Datos generados exitosamente!")
 
-        # Acceder a la colección de teatros
-        theaters_collection = db.theaters
+with col2:
+    st.header("📊 Gráfico de ejemplo")
+    
+    # Generar datos aleatorios
+    data = pd.DataFrame({
+        'x': range(10),
+        'y': np.random.randn(10).cumsum(),
+        'categoria': np.random.choice(['A', 'B', 'C'], 10)
+    })
+    
+    # Crear gráfico
+    fig = px.line(data, x='x', y='y', color='categoria', 
+                  title="Datos Aleatorios")
+    st.plotly_chart(fig, use_container_width=True)
 
-        # Consultar teatros por ciudad
-        query = {"location.address.city": city_name}
-        theaters = list(theaters_collection.find(query).limit(5))
+# Métricas
+st.markdown("---")
+st.header("📈 Métricas")
 
-        # Obtener conteo total
-        total_count = theaters_collection.count_documents(query)
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric("Usuarios", "1,234", "12%")
+with col2:
+    st.metric("Ventas", "$5,678", "-2%")
+with col3:
+    st.metric("Conversión", "3.4%", "0.5%")
+with col4:
+    st.metric("Satisfacción", "4.8/5", "0.2")
 
-        # Cerrar conexión
-        client.close()
+# Tabla de datos
+st.markdown("---")
+st.header("📋 Tabla de Datos")
+st.dataframe(data, use_container_width=True)
 
-        return theaters, total_count
-
-    except Exception as e:
-        st.error(f"Error al consultar MongoDB: {e}")
-        return None, 0
-
-# Configuración de la página Streamlit
-st.set_page_config(page_title="Buscador de Teatros", page_icon="🎭")
-st.title("🎭 Buscador de Teatros por Ciudad")
-st.write("Esta aplicación busca teatros en la base de datos sample_mflix de MongoDB por nombre de ciudad.")
-
-# Campo de entrada para la ciudad
-city_name = st.text_input("Nombre de la ciudad:", value="Chicago")
-
-# Botón de búsqueda
-if st.button("Buscar Teatros"):
-    if city_name:
-        with st.spinner(f"Buscando teatros en {city_name}..."):
-            theaters, total_count = query_theaters_by_city(city_name)
-
-            if theaters:
-                st.success(f"Se encontraron {total_count} teatros en {city_name}")
-                st.write(f"Mostrando los primeros 5 resultados:")
-
-                for i, theater in enumerate(theaters, 1):
-                    with st.expander(f"Teatro #{i}: {theater.get('location', {}).get('address', {}).get('street1', 'Sin dirección')}"):
-                        st.write(f"**ID:** {theater.get('_id')}")
-                        st.write(f"**Teatro ID:** {theater.get('theaterId')}")
-                        st.write(f"**Dirección:** {theater.get('location', {}).get('address', {}).get('street1')}")
-                        st.write(f"**Ciudad:** {theater.get('location', {}).get('address', {}).get('city')}")
-                        st.write(f"**Estado:** {theater.get('location', {}).get('address', {}).get('state')}")
-                        st.write(f"**Código postal:** {theater.get('location', {}).get('address', {}).get('zipcode')}")
-            else:
-                st.warning(f"No se encontraron teatros en {city_name} o hubo un error en la consulta.")
-    else:
-        st.warning("Por favor ingresa un nombre de ciudad.")
-
-st.divider()
-st.write("Nota: Esta aplicación requiere una conexión a MongoDB Atlas con acceso a la base de datos sample_mflix.")
+# Footer
+st.markdown("---")
+st.markdown("**Aplicación creada con Streamlit y Docker** 🐳")
